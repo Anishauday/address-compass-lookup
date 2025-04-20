@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin, Search, ArrowDown, AlertTriangle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import FileUpload from "./FileUpload";
 import { AddressRecord, findMatches } from "@/services/fileService";
 import { parseAddressString } from "@/utils/addressParser";
@@ -41,14 +34,20 @@ export default function AddressSearch() {
     setAddressData(data);
   };
 
-  const handleSingleLineSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSearching(true);
-    const parsedAddress = parseAddressString(singleLineAddress);
-    performSearch(parsedAddress);
-  };
+  useEffect(() => {
+    if (singleLineAddress) {
+      const parsedAddress = parseAddressString(singleLineAddress);
+      setManualFields({
+        zipCode: parsedAddress.zipCode || "",
+        city: parsedAddress.city || "",
+        street: parsedAddress.street || "",
+        streetType: parsedAddress.streetType || "",
+        doorNumber: parsedAddress.doorNumber || "",
+      });
+    }
+  }, [singleLineAddress]);
 
-  const handleManualSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
     performSearch(manualFields);
@@ -62,7 +61,6 @@ export default function AddressSearch() {
 
     const results = findMatches(addressData, criteria);
     
-    // Only show exact matches if they exist, otherwise show near matches
     if (results.exactMatches.length > 0) {
       setExactMatches(results.exactMatches);
       setNearMatches([]);
@@ -132,12 +130,12 @@ export default function AddressSearch() {
   );
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-4 space-y-8">
+    <div className="w-full max-w-4xl mx-auto p-4 space-y-8">
       <div className="text-center space-y-4">
         <MapPin className="w-12 h-12 mx-auto text-blue-500 animate-bounce" />
         <h1 className="text-3xl font-bold tracking-tight">Address to PPC Lookup</h1>
         <p className="text-muted-foreground">
-          Enter your address to find matching PPC records
+          Enter full address or individual components below to find matching PPC records:
         </p>
       </div>
 
@@ -147,117 +145,86 @@ export default function AddressSearch() {
           <FileUpload onFileLoaded={handleFileLoaded} />
         </Card>
       ) : (
-        <Tabs defaultValue="single" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="single">Single Line Address</TabsTrigger>
-            <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="single">
-            <Card className="p-6">
-              <form onSubmit={handleSingleLineSearch} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Enter Full Address</label>
-                  <Input
-                    required
-                    value={singleLineAddress}
-                    onChange={(e) => setSingleLineAddress(e.target.value)}
-                    placeholder="e.g., 123 Main St, Houston, TX 77001"
-                    className="text-lg"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Enter the full address including street number, name, city, state, and ZIP code
-                  </p>
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={isSearching || !singleLineAddress.trim()}
-                >
-                  {isSearching ? (
-                    <span className="flex items-center">
-                      Searching...
-                      <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      Search
-                      <Search className="ml-2 h-4 w-4" />
-                    </span>
-                  )}
-                </Button>
-              </form>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="manual">
-            <Card className="p-6">
-              <form onSubmit={handleManualSearch} className="space-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">ZIP Code (required)</label>
-                    <Input
-                      required
-                      value={manualFields.zipCode}
-                      onChange={(e) => setManualFields(prev => ({ ...prev, zipCode: e.target.value }))}
-                      placeholder="e.g., 77001"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">City Name (required)</label>
-                    <Input
-                      required
-                      value={manualFields.city}
-                      onChange={(e) => setManualFields(prev => ({ ...prev, city: e.target.value }))}
-                      placeholder="e.g., Houston"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Street Name (optional)</label>
-                    <Input
-                      value={manualFields.street}
-                      onChange={(e) => setManualFields(prev => ({ ...prev, street: e.target.value }))}
-                      placeholder="e.g., Main"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Street Type (optional)</label>
-                    <Input
-                      value={manualFields.streetType}
-                      onChange={(e) => setManualFields(prev => ({ ...prev, streetType: e.target.value }))}
-                      placeholder="e.g., ST"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Door Number (optional)</label>
-                    <Input
-                      value={manualFields.doorNumber}
-                      onChange={(e) => setManualFields(prev => ({ ...prev, doorNumber: e.target.value }))}
-                      placeholder="e.g., 123"
-                    />
-                  </div>
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={isSearching || !manualFields.zipCode || !manualFields.city}
-                >
-                  {isSearching ? (
-                    <span className="flex items-center">
-                      Searching...
-                      <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      Search
-                      <Search className="ml-2 h-4 w-4" />
-                    </span>
-                  )}
-                </Button>
-              </form>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <form onSubmit={handleSearch} className="space-y-6">
+          <div className="grid gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Full Address (Optional):</label>
+              <Input
+                value={singleLineAddress}
+                onChange={(e) => setSingleLineAddress(e.target.value)}
+                placeholder="e.g., 123 Main St, Houston, TX 77001"
+                className="text-lg"
+              />
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">ZIP Code (required)</label>
+                <Input
+                  required
+                  value={manualFields.zipCode}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">City Name (required)</label>
+                <Input
+                  required
+                  value={manualFields.city}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Street Name (optional)</label>
+                <Input
+                  value={manualFields.street}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Street Type (optional)</label>
+                <Input
+                  value={manualFields.streetType}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Door Number (optional)</label>
+                <Input
+                  value={manualFields.doorNumber}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+            </div>
+          </div>
+
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={isSearching || !manualFields.zipCode || !manualFields.city}
+          >
+            {isSearching ? (
+              <span className="flex items-center">
+                Searching...
+                <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
+              </span>
+            ) : (
+              <span className="flex items-center">
+                Search
+                <Search className="ml-2 h-4 w-4" />
+              </span>
+            )}
+          </Button>
+        </form>
       )}
 
       {exactMatches.length > 0 && (
