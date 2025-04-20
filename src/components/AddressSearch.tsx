@@ -14,13 +14,10 @@ import {
 } from "@/components/ui/table";
 import FileUpload from "./FileUpload";
 import { AddressRecord, findMatches } from "@/services/fileService";
+import { parseAddressString } from "@/utils/addressParser";
 
 export default function AddressSearch() {
-  const [zipCode, setZipCode] = useState("");
-  const [city, setCity] = useState("");
-  const [street, setStreet] = useState("");
-  const [streetType, setStreetType] = useState("");
-  const [doorNumber, setDoorNumber] = useState("");
+  const [singleLineAddress, setSingleLineAddress] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [exactMatches, setExactMatches] = useState<AddressRecord[]>([]);
   const [nearMatches, setNearMatches] = useState<AddressRecord[]>([]);
@@ -34,12 +31,19 @@ export default function AddressSearch() {
     e.preventDefault();
     setIsSearching(true);
 
+    const parsedAddress = parseAddressString(singleLineAddress);
+    
+    if (!parsedAddress.zipCode || !parsedAddress.city) {
+      setIsSearching(false);
+      return;
+    }
+
     const results = findMatches(addressData, {
-      zipCode,
-      city,
-      street,
-      streetType,
-      doorNumber,
+      zipCode: parsedAddress.zipCode,
+      city: parsedAddress.city,
+      street: parsedAddress.street,
+      streetType: parsedAddress.streetType,
+      doorNumber: parsedAddress.doorNumber,
     });
 
     setExactMatches(results.exactMatches);
@@ -110,7 +114,7 @@ export default function AddressSearch() {
         <MapPin className="w-12 h-12 mx-auto text-blue-500 animate-bounce" />
         <h1 className="text-3xl font-bold tracking-tight">Address to PPC Lookup</h1>
         <p className="text-muted-foreground">
-          Enter your address details to find matching PPC records
+          Enter your address to find matching PPC records
         </p>
       </div>
 
@@ -122,58 +126,24 @@ export default function AddressSearch() {
       ) : (
         <Card className="p-6">
           <form onSubmit={handleSearch} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">ZIP Code (required)</label>
-                <Input
-                  required
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                  placeholder="Enter ZIP code"
-                  pattern="[0-9]{5}"
-                  maxLength={5}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">City (required)</label>
-                <Input
-                  required
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="Enter city name"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Street Name (optional)</label>
-                <Input
-                  value={street}
-                  onChange={(e) => setStreet(e.target.value)}
-                  placeholder="Enter street name"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Street Type (optional)</label>
-                <Input
-                  value={streetType}
-                  onChange={(e) => setStreetType(e.target.value)}
-                  placeholder="e.g., ST, AVE, RD"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-medium">Door Number (optional)</label>
-                <Input
-                  value={doorNumber}
-                  onChange={(e) => setDoorNumber(e.target.value)}
-                  placeholder="Enter door number"
-                  type="number"
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Enter Full Address</label>
+              <Input
+                required
+                value={singleLineAddress}
+                onChange={(e) => setSingleLineAddress(e.target.value)}
+                placeholder="e.g., 123 Main St, Houston, TX 77001"
+                className="text-lg"
+              />
+              <p className="text-sm text-muted-foreground">
+                Enter the full address including street number, name, city, state, and ZIP code
+              </p>
             </div>
 
             <Button 
               type="submit" 
               className="w-full"
-              disabled={isSearching || !zipCode || !city}
+              disabled={isSearching || !singleLineAddress.trim()}
             >
               {isSearching ? (
                 <span className="flex items-center">
@@ -215,7 +185,7 @@ export default function AddressSearch() {
         </div>
       )}
 
-      {!isSearching && zipCode && city && exactMatches.length === 0 && nearMatches.length === 0 && (
+      {!isSearching && singleLineAddress.trim() && exactMatches.length === 0 && nearMatches.length === 0 && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>No Matches Found</AlertTitle>
