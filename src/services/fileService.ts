@@ -251,40 +251,87 @@ export function findMatches(
   const exactMatches: AddressRecord[] = [];
   const nearMatches: AddressRecord[] = [];
 
-  const doorNum = doorNumber ? parseInt(doorNumber) : null;
-
+  // First, try to find exact matches
   for (const record of records) {
+    // Skip if ZIP or city don't match
     if (record.ZIP !== zipCode || record.CITY.toUpperCase() !== city.toUpperCase()) {
       continue;
     }
 
+    let isExactStreetMatch = true;
+    
+    // Check street name if provided
     if (street && !record.STREET.toUpperCase().includes(street.toUpperCase())) {
-      continue;
+      isExactStreetMatch = false;
     }
 
+    // Check street type if provided
     if (streetType && record.TYPE.toUpperCase() !== streetType.toUpperCase()) {
-      continue;
+      isExactStreetMatch = false;
     }
 
-    if (doorNum !== null && record.LOW && record.HIGH) {
+    // If door number is provided, check range
+    if (doorNumber && record.LOW && record.HIGH) {
+      const doorNum = parseInt(doorNumber);
       const low = parseInt(record.LOW);
       const high = parseInt(record.HIGH);
 
-      if (low <= doorNum && doorNum <= high) {
+      if (low <= doorNum && doorNum <= high && isExactStreetMatch) {
         exactMatches.push(record);
         continue;
       }
 
+      // If address number is within ±200 range, consider it a near match
       if (
-        (low - 200 <= doorNum && doorNum <= high + 200) ||
-        (low <= doorNum + 200 && doorNum - 200 <= high)
+        (Math.abs(doorNum - low) <= 200 || Math.abs(doorNum - high) <= 200) &&
+        isExactStreetMatch
       ) {
-        nearMatches.push(record);
+        nearMatches.push({
+          ...record,
+          RISK_CATEGORY: 'Approximate ' + (record.RISK_CATEGORY || 'Unknown Risk')
+        });
       }
-    } else if (!doorNum) {
+    } else if (isExactStreetMatch) {
+      // If no door number provided but street matches
       exactMatches.push(record);
     }
   }
 
+  // If no exact matches found, look for similar streets in the same ZIP code
+  if (exactMatches.length === 0 && street) {
+    for (const record of records) {
+      if (record.ZIP !== zipCode) continue;
+      
+      // Use Levenshtein distance or similar string matching for street names
+      const similarity = calculateStringSimilarity(
+        street.toUpperCase(),
+        record.STREET.toUpperCase()
+      );
+      
+      if (similarity >= 0.7) { // 70% similarity threshold
+        nearMatches.push({
+          ...record,
+          RISK_CATEGORY: 'Approximate ' + (record.RISK_CATEGORY || 'Unknown Risk')
+        });
+      }
+    }
+  }
+
   return { exactMatches, nearMatches };
+}
+
+// Helper function to calculate string similarity (simple implementation)
+function calculateStringSimilarity(str1: string, str2: string): number {
+  const maxLength = Math.max(str1.length, str2.length);
+  if (maxLength === 0) return 1.0; // Both strings are empty
+  
+  let matches = 0;
+  const minLength = Math.min(str1.length, str2.length);
+  
+  // Compare characters
+  for (let i = 0; i < minLength; i++) {
+    if (str1[i] === str2[i]) matches++;
+  }
+  
+  return matches / maxLength;
 }
