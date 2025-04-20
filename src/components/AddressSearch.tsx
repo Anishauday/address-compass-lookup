@@ -30,6 +30,7 @@ export default function AddressSearch() {
   const [exactMatches, setExactMatches] = useState<AddressRecord[]>([]);
   const [nearMatches, setNearMatches] = useState<AddressRecord[]>([]);
   const [addressData, setAddressData] = useState<AddressRecord[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const handleFileLoaded = (data: AddressRecord[]) => {
     setAddressData(data);
@@ -51,6 +52,7 @@ export default function AddressSearch() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
+    setHasSearched(true);
     performSearch(manualFields);
   };
 
@@ -255,7 +257,7 @@ export default function AddressSearch() {
         </Card>
       )}
 
-      {!isSearching && ((singleLineAddress.trim() || manualFields.zipCode) && exactMatches.length === 0 && nearMatches.length === 0) && (
+      {!isSearching && hasSearched && exactMatches.length === 0 && nearMatches.length === 0 && (
         <Alert variant="destructive" className="bg-red-50 border-red-200">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>No Matches Found</AlertTitle>
