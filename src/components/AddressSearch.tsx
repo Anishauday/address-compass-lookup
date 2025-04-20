@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import FileUpload from "./FileUpload";
-import { AddressRecord, findMatches } from "@/services/fileService";
+import { AddressRecord, findMatches, parseFile } from "@/services/fileService";
 import { parseAddressString } from "@/utils/addressParser";
 import RiskCategoryInfo from "./RiskCategoryInfo";
 
