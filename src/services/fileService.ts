@@ -1,4 +1,3 @@
-
 export type AddressRecord = {
   TRACKNUM: string;
   ZIP: string;
@@ -107,8 +106,12 @@ function parseSmartLine(line: string): AddressRecord {
   return result;
 }
 
+export type SearchResults = {
+  exactMatches: AddressRecord[];
+  nearMatches: AddressRecord[];
+};
+
 export async function parseFile(file: File): Promise<AddressRecord[]> {
-  // Validate file type
   const validTypes = ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'];
   if (!validTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.txt')) {
     throw new Error('Invalid file type. Please upload a CSV or TXT file.');
@@ -119,18 +122,15 @@ export async function parseFile(file: File): Promise<AddressRecord[]> {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
-        // Split into lines and remove empty lines
         const lines = text.split('\n').filter(line => line.trim());
         
-        // Remove header if present
         if (lines[0]?.includes('TRACKNUM')) {
           lines.shift();
         }
         
-        // Parse each line
         const records = lines
           .map(line => parseSmartLine(line))
-          .filter(record => record.TRACKNUM && record.ZIP); // Filter out invalid records
+          .filter(record => record.TRACKNUM && record.ZIP);
         
         resolve(records);
       } catch (error) {
@@ -140,4 +140,56 @@ export async function parseFile(file: File): Promise<AddressRecord[]> {
     reader.onerror = () => reject(new Error('Error reading file'));
     reader.readAsText(file);
   });
+}
+
+export function findMatches(
+  records: AddressRecord[],
+  criteria: {
+    zipCode: string;
+    city: string;
+    street?: string;
+    streetType?: string;
+    doorNumber?: string;
+  }
+): SearchResults {
+  const { zipCode, city, street, streetType, doorNumber } = criteria;
+  const exactMatches: AddressRecord[] = [];
+  const nearMatches: AddressRecord[] = [];
+
+  const doorNum = doorNumber ? parseInt(doorNumber) : null;
+
+  for (const record of records) {
+    if (record.ZIP !== zipCode || record.CITY.toUpperCase() !== city.toUpperCase()) {
+      continue;
+    }
+
+    if (street && !record.STREET.toUpperCase().includes(street.toUpperCase())) {
+      continue;
+    }
+
+    if (streetType && record.TYPE.toUpperCase() !== streetType.toUpperCase()) {
+      continue;
+    }
+
+    if (doorNum !== null && record.LOW && record.HIGH) {
+      const low = parseInt(record.LOW);
+      const high = parseInt(record.HIGH);
+
+      if (low <= doorNum && doorNum <= high) {
+        exactMatches.push(record);
+        continue;
+      }
+
+      if (
+        (low - 200 <= doorNum && doorNum <= high + 200) ||
+        (low <= doorNum + 200 && doorNum - 200 <= high)
+      ) {
+        nearMatches.push(record);
+      }
+    } else if (!doorNum) {
+      exactMatches.push(record);
+    }
+  }
+
+  return { exactMatches, nearMatches };
 }

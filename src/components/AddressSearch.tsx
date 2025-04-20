@@ -1,26 +1,19 @@
 import { useState } from "react";
-import { MapPin, Search, ArrowDown } from "lucide-react";
+import { MapPin, Search, ArrowDown, AlertTriangle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import FileUpload from "./FileUpload";
-import { AddressRecord } from "@/services/fileService";
-
-type SearchResult = {
-  TRACKNUM: string;
-  ZIP: string;
-  CITY: string;
-  STREET: string;
-  TYPE: string;
-  LOW: string;
-  HIGH: string;
-  PPC: string;
-};
+import { AddressRecord, findMatches } from "@/services/fileService";
 
 export default function AddressSearch() {
   const [zipCode, setZipCode] = useState("");
@@ -29,8 +22,8 @@ export default function AddressSearch() {
   const [streetType, setStreetType] = useState("");
   const [doorNumber, setDoorNumber] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [matches, setMatches] = useState<SearchResult[]>([]);
-  const [nearMatches, setNearMatches] = useState<SearchResult[]>([]);
+  const [exactMatches, setExactMatches] = useState<AddressRecord[]>([]);
+  const [nearMatches, setNearMatches] = useState<AddressRecord[]>([]);
   const [addressData, setAddressData] = useState<AddressRecord[]>([]);
 
   const handleFileLoaded = (data: AddressRecord[]) => {
@@ -41,42 +34,75 @@ export default function AddressSearch() {
     e.preventDefault();
     setIsSearching(true);
 
-    const results = addressData.filter(record => {
-      if (record.ZIP !== zipCode || record.CITY.toUpperCase() !== city.toUpperCase()) {
-        return false;
-      }
-
-      if (street && !record.STREET.toUpperCase().includes(street.toUpperCase())) {
-        return false;
-      }
-
-      if (streetType && record.TYPE.toUpperCase() !== streetType.toUpperCase()) {
-        return false;
-      }
-
-      if (doorNumber) {
-        const num = parseInt(doorNumber);
-        const low = parseInt(record.LOW);
-        const high = parseInt(record.HIGH);
-
-        if (low <= num && num <= high) {
-          return true;
-        }
-
-        if ((low - 100) <= num && num <= (high + 100)) {
-          setNearMatches(prev => [...prev, record]);
-          return false;
-        }
-
-        return false;
-      }
-
-      return true;
+    const results = findMatches(addressData, {
+      zipCode,
+      city,
+      street,
+      streetType,
+      doorNumber,
     });
 
-    setMatches(results);
+    setExactMatches(results.exactMatches);
+    setNearMatches(results.nearMatches);
     setIsSearching(false);
   };
+
+  const handleDownloadNearMatches = () => {
+    const csvContent = [
+      ["TRACKNUM", "ZIP", "CITY", "STREET", "TYPE", "LOW", "HIGH", "PPC"],
+      ...nearMatches.map(record => [
+        record.TRACKNUM,
+        record.ZIP,
+        record.CITY,
+        record.STREET,
+        record.TYPE,
+        record.LOW,
+        record.HIGH,
+        record.PPC
+      ])
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "near_matches.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const AddressTable = ({ records }: { records: AddressRecord[] }) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>TRACKNUM</TableHead>
+          <TableHead>ZIP</TableHead>
+          <TableHead>CITY</TableHead>
+          <TableHead>STREET</TableHead>
+          <TableHead>TYPE</TableHead>
+          <TableHead>LOW</TableHead>
+          <TableHead>HIGH</TableHead>
+          <TableHead>PPC</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {records.map((record, index) => (
+          <TableRow key={index}>
+            <TableCell>{record.TRACKNUM}</TableCell>
+            <TableCell>{record.ZIP}</TableCell>
+            <TableCell>{record.CITY}</TableCell>
+            <TableCell>{record.STREET}</TableCell>
+            <TableCell>{record.TYPE}</TableCell>
+            <TableCell>{record.LOW}</TableCell>
+            <TableCell>{record.HIGH}</TableCell>
+            <TableCell className="font-medium bg-yellow-100">{record.PPC}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 
   return (
     <div className="w-full max-w-3xl mx-auto p-4 space-y-8">
@@ -147,7 +173,7 @@ export default function AddressSearch() {
             <Button 
               type="submit" 
               className="w-full"
-              disabled={isSearching}
+              disabled={isSearching || !zipCode || !city}
             >
               {isSearching ? (
                 <span className="flex items-center">
@@ -165,73 +191,33 @@ export default function AddressSearch() {
         </Card>
       )}
 
-      {matches.length > 0 && (
-        <div className="space-y-4 animate-fade-in">
+      {exactMatches.length > 0 && (
+        <div className="space-y-4">
           <h2 className="text-xl font-semibold">Exact Matches</h2>
-          {matches.map((match, index) => (
-            <Card key={index} className="p-4 hover:shadow-lg transition-shadow">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Track Number</p>
-                  <p className="font-medium">{match.TRACKNUM}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">PPC</p>
-                  <p className="font-medium">{match.PPC}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Address</p>
-                  <p className="font-medium">
-                    {match.STREET} {match.TYPE}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Range</p>
-                  <p className="font-medium">{match.LOW} - {match.HIGH}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
+          <AddressTable records={exactMatches} />
         </div>
       )}
 
       {nearMatches.length > 0 && (
         <div className="space-y-4">
           <Alert>
-            <AlertTitle>Near Matches Found</AlertTitle>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>No exact match. Showing nearby matches (within ±200)</AlertTitle>
             <AlertDescription>
-              We found some addresses that are close to your search criteria (±100 door numbers)
+              We found some addresses that are close to your search criteria
             </AlertDescription>
           </Alert>
-          {nearMatches.map((match, index) => (
-            <Card key={index} className="p-4 hover:shadow-lg transition-shadow">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Track Number</p>
-                  <p className="font-medium">{match.TRACKNUM}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">PPC</p>
-                  <p className="font-medium">{match.PPC}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Address</p>
-                  <p className="font-medium">
-                    {match.STREET} {match.TYPE}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Range</p>
-                  <p className="font-medium">{match.LOW} - {match.HIGH}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
+          <AddressTable records={nearMatches} />
+          <Button variant="outline" onClick={handleDownloadNearMatches}>
+            <Download className="h-4 w-4 mr-2" />
+            Download Near Matches
+          </Button>
         </div>
       )}
 
-      {!isSearching && zipCode && city && matches.length === 0 && nearMatches.length === 0 && (
+      {!isSearching && zipCode && city && exactMatches.length === 0 && nearMatches.length === 0 && (
         <Alert>
+          <AlertTriangle className="h-4 w-4" />
           <AlertTitle>No Matches Found</AlertTitle>
           <AlertDescription>
             We couldn't find any matches for your search criteria. Please try different parameters.
