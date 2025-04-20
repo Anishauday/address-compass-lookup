@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { MapPin, Search, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,8 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import FileUpload from "./FileUpload";
+import { AddressRecord } from "@/services/fileService";
 
 type SearchResult = {
   TRACKNUM: string;
@@ -30,40 +31,51 @@ export default function AddressSearch() {
   const [isSearching, setIsSearching] = useState(false);
   const [matches, setMatches] = useState<SearchResult[]>([]);
   const [nearMatches, setNearMatches] = useState<SearchResult[]>([]);
+  const [addressData, setAddressData] = useState<AddressRecord[]>([]);
 
-  // Simulated search function (replace with actual API call)
+  const handleFileLoaded = (data: AddressRecord[]) => {
+    setAddressData(data);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
 
-    // Simulate API delay
-    setTimeout(() => {
-      // Mock data for demonstration
-      if (zipCode === "12345" && city.toUpperCase() === "DEMO") {
-        setMatches([{
-          TRACKNUM: "R123_456",
-          ZIP: "12345",
-          CITY: "DEMO",
-          STREET: "MAIN",
-          TYPE: "ST",
-          LOW: "100",
-          HIGH: "200",
-          PPC: "1W"
-        }]);
-      } else if (doorNumber !== "") {
-        setNearMatches([{
-          TRACKNUM: "R789_101",
-          ZIP: zipCode,
-          CITY: city.toUpperCase(),
-          STREET: street.toUpperCase(),
-          TYPE: streetType.toUpperCase(),
-          LOW: "300",
-          HIGH: "400",
-          PPC: "2X"
-        }]);
+    const results = addressData.filter(record => {
+      if (record.ZIP !== zipCode || record.CITY.toUpperCase() !== city.toUpperCase()) {
+        return false;
       }
-      setIsSearching(false);
-    }, 1000);
+
+      if (street && !record.STREET.toUpperCase().includes(street.toUpperCase())) {
+        return false;
+      }
+
+      if (streetType && record.TYPE.toUpperCase() !== streetType.toUpperCase()) {
+        return false;
+      }
+
+      if (doorNumber) {
+        const num = parseInt(doorNumber);
+        const low = parseInt(record.LOW);
+        const high = parseInt(record.HIGH);
+
+        if (low <= num && num <= high) {
+          return true;
+        }
+
+        if ((low - 100) <= num && num <= (high + 100)) {
+          setNearMatches(prev => [...prev, record]);
+          return false;
+        }
+
+        return false;
+      }
+
+      return true;
+    });
+
+    setMatches(results);
+    setIsSearching(false);
   };
 
   return (
@@ -76,75 +88,82 @@ export default function AddressSearch() {
         </p>
       </div>
 
-      <Card className="p-6">
-        <form onSubmit={handleSearch} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">ZIP Code (required)</label>
-              <Input
-                required
-                value={zipCode}
-                onChange={(e) => setZipCode(e.target.value)}
-                placeholder="Enter ZIP code"
-                pattern="[0-9]{5}"
-                maxLength={5}
-              />
+      {addressData.length === 0 ? (
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold mb-4">First, upload your address data file</h2>
+          <FileUpload onFileLoaded={handleFileLoaded} />
+        </Card>
+      ) : (
+        <Card className="p-6">
+          <form onSubmit={handleSearch} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">ZIP Code (required)</label>
+                <Input
+                  required
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  placeholder="Enter ZIP code"
+                  pattern="[0-9]{5}"
+                  maxLength={5}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">City (required)</label>
+                <Input
+                  required
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Enter city name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Street Name (optional)</label>
+                <Input
+                  value={street}
+                  onChange={(e) => setStreet(e.target.value)}
+                  placeholder="Enter street name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Street Type (optional)</label>
+                <Input
+                  value={streetType}
+                  onChange={(e) => setStreetType(e.target.value)}
+                  placeholder="e.g., ST, AVE, RD"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium">Door Number (optional)</label>
+                <Input
+                  value={doorNumber}
+                  onChange={(e) => setDoorNumber(e.target.value)}
+                  placeholder="Enter door number"
+                  type="number"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">City (required)</label>
-              <Input
-                required
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Enter city name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Street Name (optional)</label>
-              <Input
-                value={street}
-                onChange={(e) => setStreet(e.target.value)}
-                placeholder="Enter street name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Street Type (optional)</label>
-              <Input
-                value={streetType}
-                onChange={(e) => setStreetType(e.target.value)}
-                placeholder="e.g., ST, AVE, RD"
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium">Door Number (optional)</label>
-              <Input
-                value={doorNumber}
-                onChange={(e) => setDoorNumber(e.target.value)}
-                placeholder="Enter door number"
-                type="number"
-              />
-            </div>
-          </div>
 
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isSearching}
-          >
-            {isSearching ? (
-              <span className="flex items-center">
-                Searching...
-                <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
-              </span>
-            ) : (
-              <span className="flex items-center">
-                Search
-                <Search className="ml-2 h-4 w-4" />
-              </span>
-            )}
-          </Button>
-        </form>
-      </Card>
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isSearching}
+            >
+              {isSearching ? (
+                <span className="flex items-center">
+                  Searching...
+                  <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  Search
+                  <Search className="ml-2 h-4 w-4" />
+                </span>
+              )}
+            </Button>
+          </form>
+        </Card>
+      )}
 
       {matches.length > 0 && (
         <div className="space-y-4 animate-fade-in">
