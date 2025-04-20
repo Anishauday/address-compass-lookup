@@ -2,9 +2,11 @@
 import { AddressRecord } from '@/types/address';
 import { parseSmartLine } from '@/utils/addressParser';
 import { findMatches } from '@/utils/addressMatcher';
+import { mapRiskCategory } from '@/utils/riskMapping';
 
 export type { AddressRecord, SearchResults } from '@/types/address';
-export { findMatches, mapRiskCategory } from '@/utils/addressMatcher';
+export { findMatches } from '@/utils/addressMatcher';
+export { mapRiskCategory } from '@/utils/riskMapping';
 
 export async function parseFile(file: File): Promise<AddressRecord[]> {
   const validTypes = ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'];

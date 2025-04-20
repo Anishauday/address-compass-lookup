@@ -151,3 +151,86 @@ export function parseSmartLine(line: string): AddressRecord {
 
   return result;
 }
+
+// Add the new function that was missing
+export function parseAddressString(addressString: string): {
+  zipCode: string;
+  city: string;
+  street?: string;
+  streetType?: string;
+  doorNumber?: string;
+} {
+  const result = {
+    zipCode: '',
+    city: '',
+    street: '',
+    streetType: '',
+    doorNumber: ''
+  };
+
+  // Check if string is empty
+  if (!addressString.trim()) {
+    return result;
+  }
+
+  // Look for ZIP code (5 digits)
+  const zipMatch = addressString.match(/\b\d{5}\b/);
+  if (zipMatch) {
+    result.zipCode = zipMatch[0];
+  }
+
+  // Split by comma to separate parts
+  const parts = addressString.split(',').map(p => p.trim());
+  
+  // If we have more than one part, the last part likely has the city and ZIP
+  if (parts.length > 1) {
+    const lastPart = parts[parts.length - 1];
+    // Look for the city before the ZIP
+    if (result.zipCode && lastPart.includes(result.zipCode)) {
+      const cityCandidate = lastPart.split(result.zipCode)[0].trim();
+      if (cityCandidate) {
+        result.city = cityCandidate;
+      }
+    } 
+    // If no ZIP in last part, assume it's just the city
+    else if (!lastPart.match(/\d{5}/)) {
+      result.city = lastPart;
+    }
+
+    // First part usually has the street address
+    const firstPart = parts[0];
+    
+    // Try to extract street type (RD, ST, AVE, etc.)
+    for (const type of Array.from(TYPE_SET)) {
+      if (firstPart.toUpperCase().includes(` ${type}`)) {
+        result.streetType = type;
+        break;
+      }
+    }
+    
+    // Extract door number (if present)
+    const doorNumberMatch = firstPart.match(/^\d+/);
+    if (doorNumberMatch) {
+      result.doorNumber = doorNumberMatch[0];
+    }
+    
+    // Extract street name
+    if (result.doorNumber) {
+      let streetName = firstPart.substring(result.doorNumber.length).trim();
+      if (result.streetType) {
+        // Remove the street type from the street name
+        streetName = streetName.replace(new RegExp(`\\s${result.streetType}\\b`, 'i'), '');
+      }
+      result.street = streetName.trim();
+    } else {
+      // If no door number, assume everything before the type is the street name
+      if (result.streetType) {
+        result.street = firstPart.split(result.streetType)[0].trim();
+      } else {
+        result.street = firstPart;
+      }
+    }
+  }
+
+  return result;
+}
