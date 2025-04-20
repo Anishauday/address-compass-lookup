@@ -1,11 +1,11 @@
 
-import { Map } from 'lucide-react';
+import { MapPinned } from 'lucide-react';
 
 export const PageHeader = () => {
   return (
     <div className="text-center mb-12">
       <div className="flex justify-center mb-6">
-        <Map className="w-12 h-12 text-indigo-600 animate-bounce" />
+        <MapPinned className="w-12 h-12 text-indigo-600 animate-bounce" />
       </div>
       <h1 className="text-4xl font-bold text-gray-800 mb-4 animate-fade-in">
         Address to PPC Lookup
