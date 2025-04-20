@@ -152,7 +152,7 @@ export default function AddressSearch() {
               <Input
                 value={singleLineAddress}
                 onChange={(e) => setSingleLineAddress(e.target.value)}
-                placeholder="e.g., 123 Main St, Houston, TX 77001"
+                placeholder="e.g., 2794 Voss, Addison, TX 75001"
                 className="text-lg"
               />
             </div>
