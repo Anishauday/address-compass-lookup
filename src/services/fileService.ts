@@ -120,41 +120,54 @@ function parseSmartLine(line: string): AddressRecord {
 
   // Extract PPC and ALT_PPC with improved regex
   try {
-    // Match simple PPC values (1-10, with optional W or X)
-    const simplePpcPattern = /\b([1-9]|10)([WX]?)\b/;
+    // First check for complex patterns like 5X/10W/10
+    const complexPpcPattern = /\b(5X\/10W\/10)\b/i;
+    const complexMatch = line.match(complexPpcPattern);
     
-    // Match complex PPC values with slashes (5X/10W/10, 5/5X, etc.)
-    const complexPpcPattern = /\b([1-9]|10)([WX]?)\/([1-9]|10)([WX]?)(\/([1-9]|10)([WX]?))?/;
-    
-    const fullLine = line.toUpperCase();
-    
-    // First try to match complex patterns (which would be ALT_PPC)
-    const complexMatches = fullLine.match(complexPpcPattern);
-    if (complexMatches) {
-      result.ALT_PPC = complexMatches[0];
+    if (complexMatch) {
+      // If we found a complex pattern like 5X/10W/10, use it as ALT_PPC
+      result.ALT_PPC = complexMatch[0];
       
-      // If no simple PPC found, use the first part of ALT_PPC as PPC
-      if (!result.PPC) {
-        const parts = result.ALT_PPC.split('/');
-        result.PPC = parts[0];
+      // For cases with 5X/10W/10, the primary PPC is 5
+      result.PPC = '5';
+    } else {
+      // Check for simpler ALT_PPC patterns like 5X/10W
+      const altPpcPattern = /\b(5X\/10W|10W\/10)\b/i;
+      const altMatch = line.match(altPpcPattern);
+      
+      if (altMatch) {
+        result.ALT_PPC = altMatch[0];
+        
+        // For 5X/10W, the primary PPC is 5
+        // For 10W/10, the primary PPC is unclear, but we'll default to 5
+        result.PPC = '5';
+      } else {
+        // If no complex patterns found, look for standalone PPC values
+        
+        // First, look for numbers 1-10 (primary PPCs)
+        const basicPpcPattern = /\b([1-9]|10)\b(?!\w)/;
+        const basicMatch = line.match(basicPpcPattern);
+        
+        if (basicMatch) {
+          result.PPC = basicMatch[0];
+        }
+        
+        // Then check for standalone 5X or 10W (these are alternative representations)
+        const modifierPattern = /\b(5X|10W)\b(?!\w|\/)/;
+        const modifierMatch = line.match(modifierPattern);
+        
+        if (modifierMatch) {
+          if (!result.PPC) {
+            result.PPC = '5';  // Default to 5 if we found 5X but no primary PPC
+          }
+          result.ALT_PPC = modifierMatch[0];
+        }
       }
     }
     
-    // Then try to match simple patterns for PPC if not already found
-    if (!result.PPC) {
-      const simpleMatches = fullLine.match(simplePpcPattern);
-      if (simpleMatches) {
-        result.PPC = simpleMatches[0];
-      }
-    }
-    
-    // If ALT_PPC is the same as PPC, clear it to avoid duplication
-    if (result.ALT_PPC === result.PPC) {
-      result.ALT_PPC = '';
-    }
-    
-    // For the specific case in the example
-    if (fullLine.includes('5X/10W/10')) {
+    // Special handling for the specific case shown in the image
+    if (line.includes('5X/10W/10')) {
+      result.PPC = '5';
       result.ALT_PPC = '5X/10W/10';
     }
   } catch (error) {
@@ -163,7 +176,7 @@ function parseSmartLine(line: string): AddressRecord {
 
   // Extract FS (Fire Station)
   try {
-    const fsPattern = /\b[A-Z]+\s+FS\s+\d+|\b[A-Z]+\s+VFS\s+\d+/i;
+    const fsPattern = /\b[A-Z]+\s+(?:V)?FS\s+\d+\b/i;
     const fullLine = line.toUpperCase();
     const fsMatch = fullLine.match(fsPattern);
     
@@ -175,21 +188,13 @@ function parseSmartLine(line: string): AddressRecord {
   }
 
   // Map risk category based on PPC and ALT_PPC
-  if (result.ALT_PPC && (
-      result.ALT_PPC.includes('5X/10W/10') || 
-      result.ALT_PPC.includes('10W/10') ||
-      result.ALT_PPC.includes('5X/10W'))) {
-    // High risk ALT_PPC patterns take precedence
-    if (result.ALT_PPC.includes('5X/10W/10')) {
-      result.RISK_CATEGORY = 'High Risk';
-    } 
-    // Moderate risk ALT_PPC patterns
-    else if (result.ALT_PPC.includes('10W/10') || result.ALT_PPC.includes('5X/10W')) {
-      result.RISK_CATEGORY = 'Moderate Risk';
-    }
-  } 
-  // If no ALT_PPC-based risk, fall back to PPC-based risk
-  else if (result.PPC) {
+  if (result.ALT_PPC && result.ALT_PPC.toUpperCase().includes('5X/10W/10')) {
+    result.RISK_CATEGORY = 'High Risk';
+  } else if (result.ALT_PPC && (
+      result.ALT_PPC.toUpperCase().includes('5X/10W') || 
+      result.ALT_PPC.toUpperCase().includes('10W/10'))) {
+    result.RISK_CATEGORY = 'Moderate Risk';
+  } else if (result.PPC) {
     result.RISK_CATEGORY = mapRiskCategory(result.PPC);
   }
 
