@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { MapPin, Search, ArrowDown, AlertTriangle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import FileUpload from "./FileUpload";
 import { AddressRecord, findMatches } from "@/services/fileService";
 import { parseAddressString } from "@/utils/addressParser";
 
 export default function AddressSearch() {
   const [singleLineAddress, setSingleLineAddress] = useState("");
+  const [manualFields, setManualFields] = useState({
+    zipCode: "",
+    city: "",
+    street: "",
+    streetType: "",
+    doorNumber: "",
+  });
   const [isSearching, setIsSearching] = useState(false);
   const [exactMatches, setExactMatches] = useState<AddressRecord[]>([]);
   const [nearMatches, setNearMatches] = useState<AddressRecord[]>([]);
@@ -27,27 +41,36 @@ export default function AddressSearch() {
     setAddressData(data);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSingleLineSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
-
     const parsedAddress = parseAddressString(singleLineAddress);
-    
-    if (!parsedAddress.zipCode || !parsedAddress.city) {
+    performSearch(parsedAddress);
+  };
+
+  const handleManualSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSearching(true);
+    performSearch(manualFields);
+  };
+
+  const performSearch = (criteria: any) => {
+    if (!criteria.zipCode || !criteria.city) {
       setIsSearching(false);
       return;
     }
 
-    const results = findMatches(addressData, {
-      zipCode: parsedAddress.zipCode,
-      city: parsedAddress.city,
-      street: parsedAddress.street,
-      streetType: parsedAddress.streetType,
-      doorNumber: parsedAddress.doorNumber,
-    });
-
-    setExactMatches(results.exactMatches);
-    setNearMatches(results.nearMatches);
+    const results = findMatches(addressData, criteria);
+    
+    // Only show exact matches if they exist, otherwise show near matches
+    if (results.exactMatches.length > 0) {
+      setExactMatches(results.exactMatches);
+      setNearMatches([]);
+    } else {
+      setExactMatches([]);
+      setNearMatches(results.nearMatches);
+    }
+    
     setIsSearching(false);
   };
 
@@ -124,41 +147,117 @@ export default function AddressSearch() {
           <FileUpload onFileLoaded={handleFileLoaded} />
         </Card>
       ) : (
-        <Card className="p-6">
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Enter Full Address</label>
-              <Input
-                required
-                value={singleLineAddress}
-                onChange={(e) => setSingleLineAddress(e.target.value)}
-                placeholder="e.g., 123 Main St, Houston, TX 77001"
-                className="text-lg"
-              />
-              <p className="text-sm text-muted-foreground">
-                Enter the full address including street number, name, city, state, and ZIP code
-              </p>
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={isSearching || !singleLineAddress.trim()}
-            >
-              {isSearching ? (
-                <span className="flex items-center">
-                  Searching...
-                  <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  Search
-                  <Search className="ml-2 h-4 w-4" />
-                </span>
-              )}
-            </Button>
-          </form>
-        </Card>
+        <Tabs defaultValue="single" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="single">Single Line Address</TabsTrigger>
+            <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="single">
+            <Card className="p-6">
+              <form onSubmit={handleSingleLineSearch} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Enter Full Address</label>
+                  <Input
+                    required
+                    value={singleLineAddress}
+                    onChange={(e) => setSingleLineAddress(e.target.value)}
+                    placeholder="e.g., 123 Main St, Houston, TX 77001"
+                    className="text-lg"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Enter the full address including street number, name, city, state, and ZIP code
+                  </p>
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={isSearching || !singleLineAddress.trim()}
+                >
+                  {isSearching ? (
+                    <span className="flex items-center">
+                      Searching...
+                      <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      Search
+                      <Search className="ml-2 h-4 w-4" />
+                    </span>
+                  )}
+                </Button>
+              </form>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="manual">
+            <Card className="p-6">
+              <form onSubmit={handleManualSearch} className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">ZIP Code (required)</label>
+                    <Input
+                      required
+                      value={manualFields.zipCode}
+                      onChange={(e) => setManualFields(prev => ({ ...prev, zipCode: e.target.value }))}
+                      placeholder="e.g., 77001"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">City Name (required)</label>
+                    <Input
+                      required
+                      value={manualFields.city}
+                      onChange={(e) => setManualFields(prev => ({ ...prev, city: e.target.value }))}
+                      placeholder="e.g., Houston"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Street Name (optional)</label>
+                    <Input
+                      value={manualFields.street}
+                      onChange={(e) => setManualFields(prev => ({ ...prev, street: e.target.value }))}
+                      placeholder="e.g., Main"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Street Type (optional)</label>
+                    <Input
+                      value={manualFields.streetType}
+                      onChange={(e) => setManualFields(prev => ({ ...prev, streetType: e.target.value }))}
+                      placeholder="e.g., ST"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Door Number (optional)</label>
+                    <Input
+                      value={manualFields.doorNumber}
+                      onChange={(e) => setManualFields(prev => ({ ...prev, doorNumber: e.target.value }))}
+                      placeholder="e.g., 123"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={isSearching || !manualFields.zipCode || !manualFields.city}
+                >
+                  {isSearching ? (
+                    <span className="flex items-center">
+                      Searching...
+                      <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      Search
+                      <Search className="ml-2 h-4 w-4" />
+                    </span>
+                  )}
+                </Button>
+              </form>
+            </Card>
+          </TabsContent>
+        </Tabs>
       )}
 
       {exactMatches.length > 0 && (
@@ -185,7 +284,7 @@ export default function AddressSearch() {
         </div>
       )}
 
-      {!isSearching && singleLineAddress.trim() && exactMatches.length === 0 && nearMatches.length === 0 && (
+      {!isSearching && ((singleLineAddress.trim() || manualFields.zipCode) && exactMatches.length === 0 && nearMatches.length === 0) && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>No Matches Found</AlertTitle>
