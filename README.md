@@ -23,6 +23,7 @@ For Windows users, we've made installation super simple with two options:
    - Download the repository
    - Double-click on `install.bat`
    - Follow the on-screen instructions
+   - The installer will detect if you're using a ZIP download or need to clone from Git
    - The installer will create shortcuts and launch the app for you
    - If the directory already contains files, you'll be given options:
      - Initialize Git in the current directory (recommended for first-time setup)
@@ -41,7 +42,7 @@ For Windows users, we've made installation super simple with two options:
 
 Both installers will:
 - Verify Node.js and Git are installed
-- Clone the repository to your desired location
+- Set up the repository (Clone or use existing files)
 - Install dependencies
 - Create a desktop shortcut (optional)
 - Launch the application for you

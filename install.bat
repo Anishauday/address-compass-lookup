@@ -61,7 +61,13 @@ if not exist "%installDir%" (
 cd /d "%installDir%"
 echo Changed directory to: %installDir%
 
-:: Get repository URL
+:: Check if we're in a valid project directory (look for package.json)
+if exist "package.json" (
+    echo Found existing project files. Skipping Git clone step.
+    goto :dependencies
+)
+
+:: Only ask for Git repository if we don't have a package.json already
 set /p repoUrl="Enter the GitHub repository URL (press Enter to use default): "
 if "%repoUrl%"=="" (
     set "repoUrl=https://github.com/yourusername/address-compass-lookup.git"
@@ -114,6 +120,7 @@ if exist "%installDir%\.git" (
 )
 echo Repository setup completed successfully.
 
+:dependencies
 :: Install dependencies
 echo Installing dependencies with npm...
 call npm install
