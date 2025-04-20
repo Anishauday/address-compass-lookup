@@ -24,6 +24,10 @@ For Windows users, we've made installation super simple with two options:
    - Double-click on `install.bat`
    - Follow the on-screen instructions
    - The installer will create shortcuts and launch the app for you
+   - If the directory already contains files, you'll be given options:
+     - Initialize Git in the current directory (recommended for first-time setup)
+     - Clone into a subdirectory
+     - Exit and choose a different directory
 
 2. **Using PowerShell installer**:
    - Download the repository

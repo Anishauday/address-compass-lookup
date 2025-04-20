@@ -68,16 +68,51 @@ if "%repoUrl%"=="" (
     echo Using default repository URL: %repoUrl%
 )
 
-:: Clone the repository
-echo Cloning the repository from %repoUrl%...
-if exist ".git" (
+:: Check if the directory is not empty and doesn't have a git repo
+if exist "%installDir%\.git" (
     echo Git repository already exists, pulling latest changes...
     git pull
+    if %errorlevel% neq 0 goto :error
 ) else (
-    git clone %repoUrl% .
+    :: Check if directory is not empty
+    dir /a /b "%installDir%" | findstr "." > nul
+    if %errorlevel% equ 0 (
+        echo WARNING: The installation directory is not empty.
+        set /p confirmContinue="Do you want to continue anyway? This may overwrite existing files. (Y/N): "
+        if /i not "%confirmContinue%"=="Y" goto :cancelled
+        
+        :: Offer options for handling existing directory
+        echo How would you like to proceed?
+        echo 1. Initialize Git in the current directory (recommended if this is your first time)
+        echo 2. Try to clone into a subdirectory
+        echo 3. Exit and choose a different directory
+        set /p dirOption="Enter your choice (1-3): "
+        
+        if "%dirOption%"=="1" (
+            echo Initializing Git in the current directory...
+            git init
+            git remote add origin %repoUrl%
+            git fetch
+            git checkout -f main || git checkout -f master
+            if %errorlevel% neq 0 goto :error
+        ) else if "%dirOption%"=="2" (
+            set "subDir=address-compass-app"
+            echo Cloning into subdirectory: %subDir%
+            mkdir "%subDir%" 2>nul
+            cd "%subDir%"
+            git clone %repoUrl% .
+            if %errorlevel% neq 0 goto :error
+            set "installDir=%installDir%\%subDir%"
+        ) else (
+            goto :cancelled
+        )
+    ) else (
+        :: Empty directory, proceed with clone
+        git clone %repoUrl% .
+        if %errorlevel% neq 0 goto :error
+    )
 )
-if %errorlevel% neq 0 goto :error
-echo Repository cloned successfully.
+echo Repository setup completed successfully.
 
 :: Install dependencies
 echo Installing dependencies with npm...
@@ -132,6 +167,12 @@ echo Installation completed successfully!
 echo.
 echo Thank you for installing Address Compass Lookup!
 echo To start the application later, use the desktop shortcut or run 'npm run dev' in the installation directory.
+echo.
+goto :end
+
+:cancelled
+echo.
+echo Installation cancelled by user.
 echo.
 goto :end
 
