@@ -77,7 +77,7 @@ export default function AddressSearch() {
 
   const handleDownloadNearMatches = () => {
     const csvContent = [
-      ["TRACKNUM", "ZIP", "CITY", "STREET", "TYPE", "LOW", "HIGH", "PPC"],
+      ["TRACKNUM", "ZIP", "CITY", "STREET", "TYPE", "LOW", "HIGH", "PPC", "ALT_PPC", "FS", "RISK"],
       ...nearMatches.map(record => [
         record.TRACKNUM,
         record.ZIP,
@@ -86,7 +86,10 @@ export default function AddressSearch() {
         record.TYPE,
         record.LOW,
         record.HIGH,
-        record.PPC
+        record.PPC,
+        record.ALT_PPC,
+        record.FS,
+        record.RISK_CATEGORY
       ])
     ].map(row => row.join(",")).join("\n");
 
@@ -126,6 +129,7 @@ export default function AddressSearch() {
           <TableHead>LOW</TableHead>
           <TableHead>HIGH</TableHead>
           <TableHead>PPC</TableHead>
+          <TableHead>ALT_PPC</TableHead>
           <TableHead>FS</TableHead>
           <TableHead>RISK</TableHead>
         </TableRow>
@@ -141,6 +145,7 @@ export default function AddressSearch() {
             <TableCell>{record.LOW}</TableCell>
             <TableCell>{record.HIGH}</TableCell>
             <TableCell className="font-medium bg-yellow-100">{record.PPC}</TableCell>
+            <TableCell className="font-medium bg-blue-100">{record.ALT_PPC || "N/A"}</TableCell>
             <TableCell>{record.FS || "N/A"}</TableCell>
             <TableCell>
               {record.RISK_CATEGORY && (

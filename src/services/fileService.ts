@@ -1,4 +1,3 @@
-
 export type AddressRecord = {
   TRACKNUM: string;
   ZIP: string;
@@ -8,6 +7,7 @@ export type AddressRecord = {
   LOW: string;
   HIGH: string;
   PPC: string;
+  ALT_PPC?: string;
   FS?: string;
   RISK_CATEGORY?: string;
 };
@@ -48,6 +48,7 @@ function parseSmartLine(line: string): AddressRecord {
     LOW: '',
     HIGH: '',
     PPC: '',
+    ALT_PPC: '',
     FS: '',
     RISK_CATEGORY: '',
   };
@@ -144,7 +145,26 @@ function parseSmartLine(line: string): AddressRecord {
     console.error('Error parsing FS:', error);
   }
 
-  // 9. Map risk category based on PPC
+  // 9. Extract ALT_PPC
+  try {
+    const altPpcPattern = /\b\d{1,2}[WX]?\/\d{1,2}[WX]?(\/\d{1,2})?$/;
+    const fullLine = line.toUpperCase();
+    
+    // Skip if we already have a PPC that's a combination (which would be considered ALT_PPC too)
+    if (result.PPC && !result.PPC.includes('/')) {
+      const matches = fullLine.match(altPpcPattern);
+      if (matches && matches[0] !== result.PPC) {
+        result.ALT_PPC = matches[0];
+      }
+    } else if (result.PPC && result.PPC.includes('/')) {
+      // If the PPC already has a slash, it's already an ALT_PPC format
+      result.ALT_PPC = result.PPC;
+    }
+  } catch (error) {
+    console.error('Error parsing ALT_PPC:', error);
+  }
+
+  // 10. Map risk category based on PPC
   if (result.PPC) {
     result.RISK_CATEGORY = mapRiskCategory(result.PPC);
   }
