@@ -1,3 +1,4 @@
+
 @echo off
 echo ======================================================
 echo       ADDRESS COMPASS LOOKUP - WINDOWS INSTALLER      
@@ -136,7 +137,7 @@ if /i "%createShortcut%"=="Y" (
     echo oLink.TargetPath = "cmd.exe" >> "%TEMP%\createShortcut.vbs"
     echo oLink.Arguments = "/k cd /d ""%installDir%"" ^&^& npm run dev" >> "%TEMP%\createShortcut.vbs"
     echo oLink.WorkingDirectory = "%installDir%" >> "%TEMP%\createShortcut.vbs"
-    echo oLink.IconLocation = "%installDir%\public\favicon.ico, 0" >> "%TEMP%\createShortcut.vbs"
+    echo oLink.IconLocation = "%installDir%\public\location-pin-favicon.svg, 0" >> "%TEMP%\createShortcut.vbs"
     echo oLink.Save >> "%TEMP%\createShortcut.vbs"
     cscript //nologo "%TEMP%\createShortcut.vbs"
     del "%TEMP%\createShortcut.vbs"
