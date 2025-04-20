@@ -17,17 +17,30 @@ Changes made via Lovable will be committed automatically to this repo.
 
 **Use Windows Installer**
 
-For Windows users, we've made installation super simple:
+For Windows users, we've made installation super simple with two options:
 
-1. Download the repository
-2. Right-click on `windows-installer.ps1` and select "Run with PowerShell"
-3. Follow the on-screen instructions
-4. The installer will:
-   - Verify Node.js and Git are installed
-   - Clone the repository to your desired location
-   - Install dependencies
-   - Create a desktop shortcut (optional)
-   - Launch the application for you
+1. **Using the batch file installer (Recommended)**:
+   - Download the repository
+   - Double-click on `install.bat`
+   - Follow the on-screen instructions
+   - The installer will create shortcuts and launch the app for you
+
+2. **Using PowerShell installer**:
+   - Download the repository
+   - Right-click on `windows-installer.ps1` and select "Run with PowerShell"
+   - If PowerShell scripts are disabled, you may need to run:
+     ```powershell
+     Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+     ```
+   - Then run: `.\windows-installer.ps1`
+   - Follow the on-screen instructions
+
+Both installers will:
+- Verify Node.js and Git are installed
+- Clone the repository to your desired location
+- Install dependencies
+- Create a desktop shortcut (optional)
+- Launch the application for you
 
 **Use your preferred IDE**
 

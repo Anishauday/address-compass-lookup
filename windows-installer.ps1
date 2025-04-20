@@ -1,5 +1,4 @@
 
-#Requires -RunAsAdministrator
 <#
 .SYNOPSIS
     Installer script for Address Compass Lookup application
@@ -10,7 +9,7 @@
     - Installs dependencies
     - Starts the application
 .NOTES
-    Version: 1.0
+    Version: 1.1
     Author: Address Compass Lookup Team
 #>
 
@@ -44,7 +43,8 @@ function Show-Error {
     Write-Host "Installation failed. Please check the error message above." -ForegroundColor Yellow
     Write-Host "If you need help, please visit our GitHub repository for support." -ForegroundColor Yellow
     Write-Host ""
-    Read-Host "Press Enter to exit"
+    Write-Host "Press Enter to exit..."
+    Read-Host
     exit 1
 }
 
@@ -58,27 +58,29 @@ function Show-Success {
 # Display the banner
 Show-Banner
 
-# Check if running as administrator
-$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Show-Error "This script needs to be run as Administrator. Right-click on the script and select 'Run as Administrator'."
-}
-
 # Check if it's Windows
 if (-not $env:OS -eq "Windows_NT") {
     Show-Error "This installer is designed for Windows only. Please use the appropriate installer for your operating system."
 }
 
+# Check for admin rights - but don't require them initially
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host "Note: This script is not running with administrator privileges." -ForegroundColor Yellow
+    Write-Host "Some features may require administrator rights." -ForegroundColor Yellow
+    Write-Host ""
+}
+
 # Ask for installation directory
 Write-Host "Where would you like to install the application?" -ForegroundColor Yellow
 Write-Host "1. Current directory: $PWD" -ForegroundColor Yellow
-Write-Host "2. Program Files" -ForegroundColor Yellow
+Write-Host "2. Documents folder" -ForegroundColor Yellow
 Write-Host "3. Custom location" -ForegroundColor Yellow
 $installChoice = Read-Host "Enter your choice (1-3)"
 
 switch ($installChoice) {
     "1" { $installDir = $PWD.Path }
-    "2" { $installDir = "$env:ProgramFiles\AddressCompassLookup" }
+    "2" { $installDir = "$env:USERPROFILE\Documents\AddressCompassLookup" }
     "3" { 
         $customPath = Read-Host "Enter the full path for installation"
         $installDir = $customPath
@@ -110,20 +112,40 @@ catch {
 try {
     Show-Progress "Checking for Node.js installation..."
     $nodeVersion = node -v
-    Write-Host "   Found Node.js $nodeVersion" -ForegroundColor Gray
+    if ($nodeVersion) {
+        Write-Host "   Found Node.js $nodeVersion" -ForegroundColor Gray
+    } else {
+        throw "Node.js is not installed"
+    }
 }
 catch {
-    Show-Error "Node.js is not installed or not in PATH. Please install Node.js from https://nodejs.org/"
+    Write-Host "   Node.js is not installed or not in PATH." -ForegroundColor Red
+    Write-Host "   Please install Node.js from https://nodejs.org/" -ForegroundColor Yellow
+    Write-Host "   After installing Node.js, restart this script." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Press Enter to exit..."
+    Read-Host
+    exit 1
 }
 
 # Check if Git is installed
 try {
     Show-Progress "Checking for Git installation..."
     $gitVersion = git --version
-    Write-Host "   Found $gitVersion" -ForegroundColor Gray
+    if ($gitVersion) {
+        Write-Host "   Found $gitVersion" -ForegroundColor Gray
+    } else {
+        throw "Git is not installed"
+    }
 }
 catch {
-    Show-Error "Git is not installed or not in PATH. Please install Git from https://git-scm.com/"
+    Write-Host "   Git is not installed or not in PATH." -ForegroundColor Red
+    Write-Host "   Please install Git from https://git-scm.com/" -ForegroundColor Yellow
+    Write-Host "   After installing Git, restart this script." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Press Enter to exit..."
+    Read-Host
+    exit 1
 }
 
 # Get repository URL
@@ -174,8 +196,8 @@ if ($createShortcut -eq "Y" -or $createShortcut -eq "y") {
         Show-Progress "Creating desktop shortcut..."
         $WshShell = New-Object -ComObject WScript.Shell
         $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Address Compass Lookup.lnk")
-        $Shortcut.TargetPath = "powershell.exe"
-        $Shortcut.Arguments = "-ExecutionPolicy Bypass -NoProfile -NoExit -Command `"Set-Location '$installDir'; npm run dev`""
+        $Shortcut.TargetPath = "cmd.exe"
+        $Shortcut.Arguments = "/k cd /d `"$installDir`" && npm run dev"
         $Shortcut.WorkingDirectory = $installDir
         $Shortcut.IconLocation = "$installDir\public\favicon.ico, 0"
         $Shortcut.Save()
@@ -191,7 +213,7 @@ $startNow = Read-Host "Do you want to start the application now? (Y/N)"
 if ($startNow -eq "Y" -or $startNow -eq "y") {
     Show-Progress "Starting the application..."
     try {
-        Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "Set-Location '$installDir'; npm run dev"
+        Start-Process cmd.exe -ArgumentList "/k", "cd /d `"$installDir`" && npm run dev"
         Write-Host "   Application started in a new window." -ForegroundColor Gray
     }
     catch {
@@ -206,8 +228,10 @@ Show-Success
 try {
     $uninstallerPath = Join-Path $installDir "uninstall.ps1"
     @"
-#Requires -RunAsAdministrator
-`$ErrorActionPreference = "Stop"
+<#
+.SYNOPSIS
+    Uninstaller for Address Compass Lookup
+#>
 
 Write-Host "Uninstalling Address Compass Lookup..." -ForegroundColor Yellow
 `$installDir = "$installDir"
@@ -239,7 +263,8 @@ if (`$confirm -eq "Y" -or `$confirm -eq "y") {
 }
 
 Write-Host "Uninstallation complete!" -ForegroundColor Green
-Read-Host "Press Enter to exit"
+Write-Host "Press Enter to exit..."
+Read-Host
 "@ | Out-File -FilePath $uninstallerPath -Encoding utf8
     Write-Host "✓ Uninstaller created at: $uninstallerPath" -ForegroundColor Green
 }
@@ -250,4 +275,5 @@ catch {
 Write-Host "Thank you for installing Address Compass Lookup!" -ForegroundColor Cyan
 Write-Host "To start the application later, use the desktop shortcut or run 'npm run dev' in the installation directory." -ForegroundColor White
 Write-Host ""
-Read-Host "Press Enter to exit"
+Write-Host "Press Enter to exit..."
+Read-Host
