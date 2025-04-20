@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MapPin, Search, ArrowDown, AlertTriangle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -130,129 +131,132 @@ export default function AddressSearch() {
   );
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 space-y-8">
-      <div className="text-center space-y-4">
-        <MapPin className="w-12 h-12 mx-auto text-blue-500 animate-bounce" />
-        <h1 className="text-3xl font-bold tracking-tight">Address to PPC Lookup</h1>
-        <p className="text-muted-foreground">
-          Enter full address or individual components below to find matching PPC records:
-        </p>
-      </div>
-
+    <div className="w-full space-y-8">
       {addressData.length === 0 ? (
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">First, upload your address data file</h2>
+        <Card className="p-8 bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
+          <h2 className="text-2xl font-semibold mb-6 text-gray-800">First, upload your address data file</h2>
           <FileUpload onFileLoaded={handleFileLoaded} />
         </Card>
       ) : (
-        <form onSubmit={handleSearch} className="space-y-6">
-          <div className="grid gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Full Address (Optional):</label>
-              <Input
-                value={singleLineAddress}
-                onChange={(e) => setSingleLineAddress(e.target.value)}
-                placeholder="e.g., 2794 Voss, Addison, TX 75001"
-                className="text-lg"
-              />
+        <form onSubmit={handleSearch} className="space-y-8">
+          <Card className="p-8 bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
+            <div className="grid gap-6">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700">Enter Full Address</label>
+                <div className="relative">
+                  <Input
+                    value={singleLineAddress}
+                    onChange={(e) => setSingleLineAddress(e.target.value)}
+                    placeholder="e.g., 2794 Voss, Addison, TX 75001"
+                    className="text-lg pl-10"
+                  />
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">ZIP Code</label>
+                  <Input
+                    value={manualFields.zipCode}
+                    readOnly
+                    className="bg-gray-50 border-gray-200"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">City Name</label>
+                  <Input
+                    value={manualFields.city}
+                    readOnly
+                    className="bg-gray-50 border-gray-200"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Street Name</label>
+                  <Input
+                    value={manualFields.street}
+                    readOnly
+                    className="bg-gray-50 border-gray-200"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Street Type</label>
+                  <Input
+                    value={manualFields.streetType}
+                    readOnly
+                    className="bg-gray-50 border-gray-200"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Door Number</label>
+                  <Input
+                    value={manualFields.doorNumber}
+                    readOnly
+                    className="bg-gray-50 border-gray-200"
+                  />
+                </div>
+              </div>
             </div>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">ZIP Code (required)</label>
-                <Input
-                  required
-                  value={manualFields.zipCode}
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">City Name (required)</label>
-                <Input
-                  required
-                  value={manualFields.city}
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Street Name (optional)</label>
-                <Input
-                  value={manualFields.street}
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Street Type (optional)</label>
-                <Input
-                  value={manualFields.streetType}
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Door Number (optional)</label>
-                <Input
-                  value={manualFields.doorNumber}
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-            </div>
-          </div>
 
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isSearching || !manualFields.zipCode || !manualFields.city}
-          >
-            {isSearching ? (
-              <span className="flex items-center">
-                Searching...
-                <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
-              </span>
-            ) : (
-              <span className="flex items-center">
-                Search
-                <Search className="ml-2 h-4 w-4" />
-              </span>
-            )}
-          </Button>
+            <Button 
+              type="submit" 
+              className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-200"
+              disabled={isSearching || !manualFields.zipCode || !manualFields.city}
+            >
+              {isSearching ? (
+                <span className="flex items-center">
+                  Searching...
+                  <ArrowDown className="ml-2 h-4 w-4 animate-bounce" />
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  Search
+                  <Search className="ml-2 h-4 w-4" />
+                </span>
+              )}
+            </Button>
+          </Card>
         </form>
       )}
 
       {exactMatches.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Exact Matches</h2>
-          <AddressTable records={exactMatches} />
-        </div>
+        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">Exact Matches</h2>
+          <div className="rounded-lg overflow-hidden border border-gray-200">
+            <AddressTable records={exactMatches} />
+          </div>
+        </Card>
       )}
 
       {nearMatches.length > 0 && (
-        <div className="space-y-4">
-          <Alert>
+        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
+          <Alert className="mb-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>No exact match. Showing nearby matches (within ±200)</AlertTitle>
             <AlertDescription>
               We found some addresses that are close to your search criteria
             </AlertDescription>
           </Alert>
-          <AddressTable records={nearMatches} />
-          <Button variant="outline" onClick={handleDownloadNearMatches}>
+          <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
+            <AddressTable records={nearMatches} />
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={handleDownloadNearMatches}
+            className="w-full sm:w-auto hover:bg-gray-100"
+          >
             <Download className="h-4 w-4 mr-2" />
             Download Near Matches
           </Button>
-        </div>
+        </Card>
       )}
 
       {!isSearching && ((singleLineAddress.trim() || manualFields.zipCode) && exactMatches.length === 0 && nearMatches.length === 0) && (
-        <Alert>
+        <Alert variant="destructive" className="bg-red-50 border-red-200">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>No Matches Found</AlertTitle>
           <AlertDescription>
