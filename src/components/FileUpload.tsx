@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Upload, FileCheck, FileX } from 'lucide-react';
+import { Upload, FileCheck, FileX, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { parseFile, AddressRecord } from '@/services/fileService';
@@ -24,7 +23,6 @@ export default function FileUpload({ onFileLoaded }: FileUploadProps) {
     setFileName(file.name);
     
     try {
-      // Use the enhanced parseFile function directly instead of the API call
       const records = await parseFile(file);
       
       if (records.length === 0) {
@@ -109,7 +107,7 @@ export default function FileUpload({ onFileLoaded }: FileUploadProps) {
             </div>
           ) : (
             <>
-              <Upload className="w-8 h-8 mb-3 text-gray-400" />
+              <ArrowUp className="w-8 h-8 mb-3 text-gray-400" />
               <p className="mb-2 text-sm text-gray-500">
                 <span className="font-semibold">Click to upload</span> or drag and drop
               </p>
