@@ -1,11 +1,11 @@
 
-import { LocationPinIcon } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 export const PageHeader = () => {
   return (
     <div className="text-center mb-12">
       <div className="flex justify-center mb-6">
-        <LocationPinIcon className="h-24 w-24 text-gray-700" />
+        <MapPin className="h-24 w-24 text-gray-700" />
       </div>
       <h1 className="text-4xl font-bold text-gray-800 mb-4 animate-fade-in">
         Public Protection Classification Lookup
