@@ -1,4 +1,3 @@
-
 @echo off
 echo ======================================================
 echo       ADDRESS COMPASS LOOKUP - WINDOWS INSTALLER      
@@ -150,6 +149,13 @@ if /i "%startNow%"=="Y" (
     echo Starting the application...
     start cmd /k "cd /d "%installDir%" && npm run dev"
     echo Application started in a new window.
+    echo.
+    echo To create a public link for others to test:
+    echo 1. Visit https://lovable.dev and sign in
+    echo 2. Open your project
+    echo 3. Click on the "Share" button in the top right
+    echo 4. Click "Publish" to deploy your application
+    echo 5. Share the provided URL with others
 )
 
 :: Create uninstaller batch file
