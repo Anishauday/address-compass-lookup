@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import FileUpload from "./FileUpload";
 import { AddressRecord, findMatches } from "@/services/fileService";
 import { parseAddressString } from "@/utils/addressParser";
+import RiskCategoryInfo from "./RiskCategoryInfo";
 
 export default function AddressSearch() {
   const [singleLineAddress, setSingleLineAddress] = useState("");
@@ -160,6 +161,35 @@ export default function AddressSearch() {
     </Table>
   );
 
+  const handleDownloadExactMatches = () => {
+    const csvContent = [
+      ["TRACKNUM", "ZIP", "CITY", "STREET", "TYPE", "LOW", "HIGH", "PPC", "ALT_PPC", "FS", "RISK"],
+      ...exactMatches.map(record => [
+        record.TRACKNUM,
+        record.ZIP,
+        record.CITY,
+        record.STREET,
+        record.TYPE,
+        record.LOW,
+        record.HIGH,
+        record.PPC,
+        record.ALT_PPC,
+        record.FS,
+        record.RISK_CATEGORY
+      ])
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "exact_matches.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="w-full space-y-8">
       {addressData.length === 0 ? (
@@ -256,9 +286,17 @@ export default function AddressSearch() {
       {exactMatches.length > 0 && (
         <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
           <h2 className="text-xl font-semibold mb-4 text-gray-800">Exact Matches</h2>
-          <div className="rounded-lg overflow-hidden border border-gray-200">
+          <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
             <AddressTable records={exactMatches} />
           </div>
+          <Button 
+            variant="outline" 
+            onClick={handleDownloadExactMatches}
+            className="w-full sm:w-auto hover:bg-gray-100"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download Exact Matches
+          </Button>
         </Card>
       )}
 
@@ -293,6 +331,13 @@ export default function AddressSearch() {
             We couldn't find any matches for your search criteria. Please try different parameters.
           </AlertDescription>
         </Alert>
+      )}
+
+      {(exactMatches.length > 0 || nearMatches.length > 0) && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">Understanding Risk Categories</h2>
+          <RiskCategoryInfo />
+        </div>
       )}
     </div>
   );
