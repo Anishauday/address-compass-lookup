@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MapPin, Search, ArrowDown, AlertTriangle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import FileUpload from "./FileUpload";
 import { AddressRecord, findMatches } from "@/services/fileService";
 import { parseAddressString } from "@/utils/addressParser";
@@ -101,6 +101,19 @@ export default function AddressSearch() {
     window.URL.revokeObjectURL(url);
   };
 
+  const getRiskBadgeColor = (riskCategory: string) => {
+    switch(riskCategory) {
+      case 'Low Risk':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'Moderate Risk':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'High Risk':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   const AddressTable = ({ records }: { records: AddressRecord[] }) => (
     <Table>
       <TableHeader>
@@ -113,6 +126,8 @@ export default function AddressSearch() {
           <TableHead>LOW</TableHead>
           <TableHead>HIGH</TableHead>
           <TableHead>PPC</TableHead>
+          <TableHead>FS</TableHead>
+          <TableHead>RISK</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -126,6 +141,14 @@ export default function AddressSearch() {
             <TableCell>{record.LOW}</TableCell>
             <TableCell>{record.HIGH}</TableCell>
             <TableCell className="font-medium bg-yellow-100">{record.PPC}</TableCell>
+            <TableCell>{record.FS || "N/A"}</TableCell>
+            <TableCell>
+              {record.RISK_CATEGORY && (
+                <Badge className={getRiskBadgeColor(record.RISK_CATEGORY)}>
+                  {record.RISK_CATEGORY}
+                </Badge>
+              )}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

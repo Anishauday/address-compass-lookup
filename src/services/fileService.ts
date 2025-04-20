@@ -1,3 +1,4 @@
+
 export type AddressRecord = {
   TRACKNUM: string;
   ZIP: string;
@@ -7,10 +8,35 @@ export type AddressRecord = {
   LOW: string;
   HIGH: string;
   PPC: string;
+  FS?: string;
+  RISK_CATEGORY?: string;
 };
 
 const TYPE_SET = new Set(['RD', 'ST', 'AVE', 'DR', 'LN', 'BLVD', 'CT', 'WAY', 'PL', 'PKWY', 'TUNL']);
 const ALLOWED_STREET_TOKENS = new Set(['US', 'FM', 'SH', 'CR', 'COUNTY', 'ROAD', 'HWY', 'HIGHWAY', 'STATE', 'LINE', 'AIRPORT', 'TUNNEL', 'PLAZA', 'TOLL']);
+
+// Map PPC values to risk categories
+export function mapRiskCategory(ppc: string): string {
+  if (!ppc) return 'Unknown';
+  
+  // Low risk: 1-5, 5/5X
+  if (/^[1-5]$/.test(ppc) || ppc === '5/5X') {
+    return 'Low Risk';
+  }
+  
+  // Moderate risk: 5X, 10W, 5X/10W, 10W/10
+  if (ppc === '5X' || ppc === '10W' || ppc === '5X/10W' || ppc === '10W/10') {
+    return 'Moderate Risk';
+  }
+  
+  // High risk: 10, 5X/10W/10, N/A
+  if (ppc === '10' || ppc === '5X/10W/10' || ppc === 'N/A') {
+    return 'High Risk';
+  }
+  
+  // Default to moderate risk for other patterns
+  return 'Moderate Risk';
+}
 
 function parseSmartLine(line: string): AddressRecord {
   const result: AddressRecord = {
@@ -22,6 +48,8 @@ function parseSmartLine(line: string): AddressRecord {
     LOW: '',
     HIGH: '',
     PPC: '',
+    FS: '',
+    RISK_CATEGORY: '',
   };
 
   const tokens = line.trim().split(/\s+/);
@@ -101,6 +129,24 @@ function parseSmartLine(line: string): AddressRecord {
     }
   } catch (error) {
     console.error('Error parsing PPC:', error);
+  }
+
+  // 8. Extract FS (Fire Station)
+  try {
+    const fsPattern = /\b[A-Z]+\s+FS\s+\d+|\b[A-Z]+\s+VFS\s+\d+/i;
+    const fullLine = line.toUpperCase();
+    const fsMatch = fullLine.match(fsPattern);
+    
+    if (fsMatch) {
+      result.FS = fsMatch[0];
+    }
+  } catch (error) {
+    console.error('Error parsing FS:', error);
+  }
+
+  // 9. Map risk category based on PPC
+  if (result.PPC) {
+    result.RISK_CATEGORY = mapRiskCategory(result.PPC);
   }
 
   return result;

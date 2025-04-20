@@ -11,7 +11,7 @@ export const PageHeader = () => {
         Public Protection Classification Lookup
       </h1>
       <p className="text-lg text-gray-600 animate-fade-in animation-delay-200">
-        Discover detailed fire risk and protection data for addresses
+        Discover detailed fire risk, protection data, and fire station information for addresses
       </p>
     </div>
   );
