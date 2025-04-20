@@ -1,18 +1,11 @@
 
-import farmersLogo from '@/assets/farmers-insurance-logo.png';
+import { LocationPinIcon } from 'lucide-react';
 
 export const PageHeader = () => {
-  console.log('Logo import path:', farmersLogo); // Added console log to check import
-
   return (
     <div className="text-center mb-12">
       <div className="flex justify-center mb-6">
-        <img 
-          src={farmersLogo} 
-          alt="Farmers Insurance Logo" 
-          className="h-24 w-auto object-contain" 
-          onError={(e) => console.error('Image load error:', e)} // Added error handling
-        />
+        <LocationPinIcon className="h-24 w-24 text-gray-700" />
       </div>
       <h1 className="text-4xl font-bold text-gray-800 mb-4 animate-fade-in">
         Public Protection Classification Lookup
