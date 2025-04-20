@@ -1,3 +1,4 @@
+
 # Welcome to your Lovable project
 
 ## Project info
@@ -13,6 +14,20 @@ There are several ways of editing your application.
 Simply visit the [Lovable Project](https://lovable.dev/projects/f65a6cf0-9e82-4e54-84d5-b0d24374fc61) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
+
+**Use Windows Installer**
+
+For Windows users, we've made installation super simple:
+
+1. Download the repository
+2. Right-click on `windows-installer.ps1` and select "Run with PowerShell"
+3. Follow the on-screen instructions
+4. The installer will:
+   - Verify Node.js and Git are installed
+   - Clone the repository to your desired location
+   - Install dependencies
+   - Create a desktop shortcut (optional)
+   - Launch the application for you
 
 **Use your preferred IDE**
 
